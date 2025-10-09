@@ -7,3 +7,4 @@ __pycache__/
 /airflow/logs/
 /airflow/plugins/__pycache__/
 /airflow/airflow-webserver.pid
+/grafana_data/

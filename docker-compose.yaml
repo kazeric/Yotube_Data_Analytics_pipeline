@@ -75,6 +75,7 @@ services:
       - ./airflow/new_video_data.csv:/opt/airflow/new_video_data.csv
       - ./airflow/video_data.csv:/opt/airflow/video_data.csv
       - ./airflow/channel_data.csv:/opt/airflow/channel_data.csv
+      # adding the appropriate postgresql driver to connect to the db
       - ./spark/app:/opt/airflow/spark/app
       - /home/eric-kaz/Desktop/Lux_DataScience/7th_week/spark_world/spark/jars/postgresql-42.7.8.jar:/opt/bitnami/spark/jars/postgresql-42.7.8.jar
     networks:
@@ -115,7 +116,7 @@ services:
     ports:
       - "3001:3000"
     volumes:
-      - grafana_data:/var/lib/grafana
+      - ./grafana_data:/var/lib/grafana
     depends_on:
       - postgres
     networks:
@@ -128,3 +129,5 @@ volumes:
 networks:
   youtube_net:
     driver: bridge
+
+
