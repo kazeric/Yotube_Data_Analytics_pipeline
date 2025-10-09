@@ -1,0 +1,118 @@
+version: "3.9"
+
+services:
+
+  postgres:
+    image: postgres:15
+    container_name: youtube_postgres
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: youtube_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - youtube_net
+
+  airflow-webserver:
+    image: apache/airflow:2.7.1
+    container_name: airflow-webserver
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres:5432/youtube_db
+      AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
+    volumes:
+      - ./airflow:/opt/airflow
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./spark_jobs:/opt/spark/data
+    ports:
+      - "8000:8080"
+    depends_on:
+      - postgres
+    command: bash -c "airflow db init && airflow users create --username admin --password admin --firstname Eric --lastname Kahindi --role Admin --email admin@example.com && airflow webserver"
+    networks:
+      - youtube_net
+
+  airflow-scheduler:
+    image: apache/airflow:2.7.1
+    container_name: airflow-scheduler
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres:5432/youtube_db
+      AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
+    volumes:
+      - ./airflow:/opt/airflow
+      - /var/run/docker.sock:/var/run/docker.sock 
+      - ./spark_jobs:/opt/spark/data
+    depends_on:
+      - postgres
+    command: airflow scheduler
+    networks:
+      - youtube_net
+
+  spark-master:
+      image: bitnamilegacy/spark:4.0.0-debian-12-r20
+      container_name: spark-master
+      environment:
+        - SPARK_MODE=master
+        - SPARK_RPC_AUTHENTICATION_ENABLED=no
+        - SPARK_RPC_ENCRYPTION_ENABLED=no
+        - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
+        - SPARK_SSL_ENABLED=no
+        - USER=spark  # Explicitly set USER env var
+      ports:
+        - "8080:8080"
+        - "7077:7077"
+      volumes:
+        - ./spark_jobs:/opt/spark/data
+        - ./airflow/new_video_data.csv:/opt/airflow/new_video_data.csv
+        - ./airflow/video_data.csv:/opt/airflow/video_data.csv
+        - ./airflow/channel_data.csv:/opt/airflow/channel_data.csv
+      networks:
+        - youtube_net
+
+  spark-worker:
+    image: bitnamilegacy/spark:4.0.0-debian-12-r20
+    container_name: spark-worker
+    environment:
+      - SPARK_MODE=worker
+      - SPARK_MASTER_URL=spark://spark-master:7077
+      - SPARK_WORKER_MEMORY=1G
+      - SPARK_WORKER_CORES=1
+      - USER=spark
+    depends_on:
+      - spark-master
+    ports:
+      - "8081:8081"
+    volumes:
+      - ./spark_jobs:/opt/spark/data
+      - ./airflow/new_video_data.csv:/opt/airflow/new_video_data.csv
+      - ./airflow/video_data.csv:/opt/airflow/video_data.csv
+      - ./airflow/channel_data.csv:/opt/airflow/channel_data.csv
+    networks:
+      - youtube_net
+
+  grafana:
+    image: grafana/grafana:main-ubuntu
+    container_name: grafana
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+    ports:
+      - "3001:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - postgres
+    networks:
+      - youtube_net
+
+volumes:
+  postgres_data:
+  grafana_data:
+
+networks:
+  youtube_net:
+    driver: bridge
