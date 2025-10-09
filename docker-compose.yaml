@@ -53,36 +53,46 @@ services:
       - youtube_net
 
   spark-master:
-      image: bitnamilegacy/spark:4.0.0-debian-12-r20
-      container_name: spark-master
-      environment:
-        - SPARK_MODE=master
-        - SPARK_RPC_AUTHENTICATION_ENABLED=no
-        - SPARK_RPC_ENCRYPTION_ENABLED=no
-        - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
-        - SPARK_SSL_ENABLED=no
-        - USER=spark  # Explicitly set USER env var
-      ports:
-        - "8080:8080"
-        - "7077:7077"
-      volumes:
-        - ./spark_jobs:/opt/spark/data
-        - ./airflow/new_video_data.csv:/opt/airflow/new_video_data.csv
-        - ./airflow/video_data.csv:/opt/airflow/video_data.csv
-        - ./airflow/channel_data.csv:/opt/airflow/channel_data.csv
-      networks:
-        - youtube_net
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: custom-spark
+    container_name: spark-master
+    hostname: spark-service
+    environment:
+      - SPARK_MODE=master
+      - SPARK_RPC_AUTHENTICATION_ENABLED=no
+      - SPARK_RPC_ENCRYPTION_ENABLED=no
+      - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
+      - SPARK_SSL_ENABLED=no
+      - USER=spark  # Explicitly set USER env var
+      - PIP_INSTALL_ADDITIONAL_REQUIREMENTS=python-dotenv
+    ports:
+      - "8080:8080"
+      - "7077:7077"
+    volumes:
+      - ./spark_jobs:/opt/spark/data
+      - ./airflow/new_video_data.csv:/opt/airflow/new_video_data.csv
+      - ./airflow/video_data.csv:/opt/airflow/video_data.csv
+      - ./airflow/channel_data.csv:/opt/airflow/channel_data.csv
+      - ./spark/app:/opt/airflow/spark/app
+      - /home/eric-kaz/Desktop/Lux_DataScience/7th_week/spark_world/spark/jars/postgresql-42.7.8.jar:/opt/bitnami/spark/jars/postgresql-42.7.8.jar
+    networks:
+      - youtube_net
 
   spark-worker:
     image: bitnamilegacy/spark:4.0.0-debian-12-r20
     container_name: spark-worker
+    hostname: spark-worker
     environment:
       - SPARK_MODE=worker
       - SPARK_MASTER_URL=spark://spark-master:7077
       - SPARK_WORKER_MEMORY=1G
       - SPARK_WORKER_CORES=1
       - USER=spark
+      - PIP_INSTALL_ADDITIONAL_REQUIREMENTS=python-dotenv
     depends_on:
+    
       - spark-master
     ports:
       - "8081:8081"
@@ -91,6 +101,8 @@ services:
       - ./airflow/new_video_data.csv:/opt/airflow/new_video_data.csv
       - ./airflow/video_data.csv:/opt/airflow/video_data.csv
       - ./airflow/channel_data.csv:/opt/airflow/channel_data.csv
+      - ./spark/app:/opt/airflow/spark/app
+      - /home/eric-kaz/Desktop/Lux_DataScience/7th_week/spark_world/spark/jars/postgresql-42.7.8.jar:/opt/bitnami/spark/jars/postgresql-42.7.8.jar
     networks:
       - youtube_net
 
