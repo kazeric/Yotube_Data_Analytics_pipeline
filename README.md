@@ -19,23 +19,6 @@ The system continuously monitors YouTube channels, extracts video performance me
 
 ---
 
-## Table of Contents
-
-1. [Project Architecture](#project-architecture)
-2. [Technology Stack](#technology-stack)
-3. [Prerequisites](#prerequisites)
-4. [Project Structure](#project-structure)
-5. [Setup Instructions](#setup-instructions)
-6. [Configuration](#configuration)
-7. [Running the Pipeline](#running-the-pipeline)
-8. [Data Flow](#data-flow)
-9. [Database Schema](#database-schema)
-10. [Monitoring and Visualization](#monitoring-and-visualization)
-11. [Troubleshooting](#troubleshooting)
-12. [Future Enhancements](#future-enhancements)
-
----
-
 ## Project Architecture
 
 ### High-Level Data Pipeline
